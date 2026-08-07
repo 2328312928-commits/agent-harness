@@ -1,0 +1,3 @@
+Agent Harness demo workspace.
+This file is used by the filesystem and MCP integration tests.
+
