@@ -1,0 +1,44 @@
+databases:
+  - name: agent-harness-db
+    databaseName: harness
+    user: harness
+    plan: free
+
+services:
+  - type: web
+    name: agent-harness-api
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: uvicorn agent_harness.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agent-harness-db
+          property: connectionString
+      - key: DEFAULT_PROVIDER
+        value: fake
+      - key: SANDBOX_BACKEND
+        value: docker
+      - key: WORKSPACE_ROOT
+        value: /tmp/agent-harness-workspace
+      - key: CORS_ORIGINS
+        value: https://agent-harness-console.onrender.com
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+  - type: web
+    name: agent-harness-console
+    runtime: static
+    plan: free
+    buildCommand: cd web && npm ci && npm run build
+    staticPublishPath: web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://agent-harness-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
