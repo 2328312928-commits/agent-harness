@@ -31,7 +31,6 @@ services:
   - type: web
     name: agent-harness-console
     runtime: static
-    plan: free
     buildCommand: cd web && npm ci && npm run build
     staticPublishPath: web/dist
     envVars:
