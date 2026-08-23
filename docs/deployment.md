@@ -22,6 +22,12 @@ The API listens on port 8000 and the web console listens on port 8080. On Linux,
 3. Confirm the service names and `CORS_ORIGINS` match the generated console URL.
 4. Update `VITE_API_URL` if Render changes the API hostname.
 
+Current public demo:
+
+- Console: <https://agent-harness-console.onrender.com>
+- API: <https://agent-harness-api-ojtj.onrender.com>
+- API health: <https://agent-harness-api-ojtj.onrender.com/api/health>
+
 The free Render demo uses the deterministic provider. Code execution tools fail safely
 because managed container platforms do not expose a Docker socket. Other tools, traces,
 checkpoints, recovery, memory, and evaluation remain available. For production code

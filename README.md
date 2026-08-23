@@ -1,7 +1,21 @@
 # Agent Harness
 
+[![CI](https://github.com/2328312928-commits/agent-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/2328312928-commits/agent-harness/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/2328312928-commits/agent-harness)](https://github.com/2328312928-commits/agent-harness/releases/tag/v0.1.0)
+[![License](https://img.shields.io/github/license/2328312928-commits/agent-harness)](LICENSE)
+
 一个可检查点恢复、可观测、可评测的开源 Agent Runtime。它不是只包一层聊天界面，
 而是把 Agent 执行所需的状态、工具协议、沙箱、上下文、评测和故障恢复拆成可替换组件。
+
+## Online Demo
+
+- 控制台：<https://agent-harness-console.onrender.com>
+- API 文档：<https://agent-harness-api-ojtj.onrender.com/docs>
+- 健康检查：<https://agent-harness-api-ojtj.onrender.com/api/health>
+
+Render 免费实例在空闲后会休眠，首次访问可能需要几十秒唤醒。在线环境使用
+`FakeProvider`；云端未挂载 Docker Socket，因此代码执行工具会安全失败并由 Runtime
+进入恢复流程。完整 Docker Sandbox 请使用本地 Compose 部署。
 
 ## 核心能力
 
