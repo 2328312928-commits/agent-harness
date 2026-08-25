@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 from datetime import UTC, datetime
@@ -9,26 +10,63 @@ from agent_harness.api.container import AppContainer
 from agent_harness.config import get_settings
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the Agent Harness benchmark suite.")
+    parser.add_argument("--provider", default="fake", help="Provider name.")
+    parser.add_argument("--model", default=None, help="Optional provider model override.")
+    parser.add_argument("--strategy", default="plan-and-execute")
+    parser.add_argument("--limit", type=int, default=110)
+    parser.add_argument("--offset", type=int, default=0)
+    parser.add_argument("--concurrency", type=int, default=4)
+    parser.add_argument(
+        "--categories",
+        default="",
+        help="Comma-separated category filter.",
+    )
+    parser.add_argument("--output-dir", default="evals/results")
+    parser.add_argument(
+        "--report",
+        default=None,
+        help=(
+            "Report path. Defaults to docs/benchmark-report.md for fake, "
+            "otherwise docs/benchmarks."
+        ),
+    )
+    return parser.parse_args()
+
+
 async def main() -> None:
+    args = parse_args()
     container = AppContainer(get_settings())
     await container.startup()
     try:
-        tasks = container.evals.load_tasks()
+        categories = {item for item in args.categories.split(",") if item}
+        tasks = [
+            task
+            for task in container.evals.load_tasks()
+            if not categories or task.category in categories
+        ][args.offset : args.offset + args.limit]
         started = datetime.now(UTC)
         summary = await container.evals.run(
             tasks,
-            provider="fake",
-            model=None,
-            strategy="plan-and-execute",
-            concurrency=4,
-            run_id=f"offline-benchmark-{started:%Y%m%d-%H%M%S}",
+            provider=args.provider,
+            model=args.model,
+            strategy=args.strategy,
+            concurrency=args.concurrency,
+            run_id=f"{args.provider}-benchmark-{started:%Y%m%d-%H%M%S}",
         )
-        output_dir = Path("evals/results")
+        output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         raw_path = output_dir / f"{summary.run_id}.json"
         raw_path.write_text(summary.model_dump_json(indent=2), encoding="utf-8")
         report = render_report(summary)
-        report_path = Path("docs/benchmark-report.md")
+        if args.report:
+            report_path = Path(args.report)
+        elif args.provider == "fake":
+            report_path = Path("docs/benchmark-report.md")
+        else:
+            report_path = Path("docs/benchmarks") / f"{summary.run_id}.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(report, encoding="utf-8")
         print(
             json.dumps(
@@ -65,12 +103,21 @@ def render_report(summary) -> str:
             f"| {category} | {len(results)} | {success:.1%} | "
             f"{sum(result.tool_accuracy for result in results) / len(results):.1%} | {p95:.0f} ms |"
         )
+    if summary.provider == "fake":
+        interpretation = (
+            "This report is generated from the deterministic Fake Provider and measures "
+            "the runtime, tool contracts, sandbox, checkpointing, and grading pipeline. "
+            "It is a harness regression benchmark, not a model-quality claim."
+        )
+    else:
+        interpretation = (
+            f"This report was generated with provider `{summary.provider}` and model "
+            f"`{summary.model}`. Model version, endpoint, prompt strategy, and dataset "
+            "revision should be kept fixed when comparing results."
+        )
     return f"""# Benchmark Report
 
-> This report is generated from the deterministic Fake Provider and measures the
-> runtime, tool contracts, sandbox, checkpointing, and grading pipeline. It is a
-> harness regression benchmark, not a claim about DeepSeek or another model's quality.
-> Replace `provider=fake` with a configured model to produce a model benchmark.
+> {interpretation}
 
 ## Run
 
@@ -107,7 +154,7 @@ def render_report(summary) -> str:
 
 ```bash
 python scripts/build_eval_dataset.py
-python scripts/run_benchmark.py
+python scripts/run_benchmark.py --provider {summary.provider} --limit {len(results)}
 ```
 
 The dataset contains 110 tasks across reasoning, filesystem, coding, database,

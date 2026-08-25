@@ -1,0 +1,68 @@
+name: Model Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider name
+        required: true
+        default: deepseek
+        type: choice
+        options:
+          - deepseek
+          - fake
+      model:
+        description: Optional model override
+        required: false
+        default: deepseek-chat
+        type: string
+      limit:
+        description: Number of tasks
+        required: true
+        default: "110"
+        type: string
+      concurrency:
+        description: Evaluation concurrency
+        required: true
+        default: "3"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      SANDBOX_BACKEND: local
+      ALLOW_LOCAL_CODE_EXECUTION: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install .
+      - name: Run benchmark
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          MODEL: ${{ inputs.model }}
+          LIMIT: ${{ inputs.limit }}
+          CONCURRENCY: ${{ inputs.concurrency }}
+        run: |
+          python scripts/run_benchmark.py \
+            --provider "$PROVIDER" \
+            --model "$MODEL" \
+            --limit "$LIMIT" \
+            --concurrency "$CONCURRENCY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-benchmark-${{ github.run_id }}
+          path: |
+            evals/results/*.json
+            docs/benchmarks/*.md
+          if-no-files-found: warn
+

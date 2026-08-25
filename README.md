@@ -125,6 +125,7 @@ Runtime、工具契约、恢复链路与评测管线，不冒充真实模型的�
 
 当前 110 条离线回归的真实结果为：任务成功率 100%、工具准确率 100%、P50 484ms、
 P95 2.18s、恢复成功率 100%。该结果用于证明 Runtime 本身可工作，不表示模型能力。
+真实 DeepSeek 评测流程见 [model-benchmark.md](docs/model-benchmark.md)。
 
 ## API 示例
 
