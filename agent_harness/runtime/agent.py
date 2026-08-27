@@ -36,6 +36,10 @@ from agent_harness.tools.base import ToolContext
 from agent_harness.tools.registry import ToolRegistry
 
 
+def provider_safe_tool_name(name: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+
+
 class AgentRunner:
     def __init__(
         self,
@@ -150,10 +154,11 @@ class AgentRunner:
 
     async def _plan(self, state: AgentState, cancel_event: asyncio.Event) -> None:
         await self._enter_phase(state, RunPhase.PLAN)
+        model_tools, _ = self._model_tools()
         context = await self.context_engineer.build(
             state,
             phase="plan",
-            tools=self.tools.specs(),
+            tools=model_tools,
             system_prompt=PLAN_SYSTEM_PROMPT,
         )
         if context.compacted:
@@ -172,10 +177,11 @@ class AgentRunner:
 
     async def _act(self, state: AgentState, cancel_event: asyncio.Event) -> ProviderResponse:
         await self._enter_phase(state, RunPhase.ACT)
+        model_tools, tool_name_map = self._model_tools()
         context = await self.context_engineer.build(
             state,
             phase="act",
-            tools=self.tools.specs(),
+            tools=model_tools,
             system_prompt=ACT_SYSTEM_PROMPT,
         )
         if context.compacted:
@@ -184,8 +190,9 @@ class AgentRunner:
             state,
             phase="act",
             context_messages=context.messages,
-            tools=self.tools.specs(),
+            tools=model_tools,
             cancel_event=cancel_event,
+            tool_name_map=tool_name_map,
         )
         if not response.content and not response.tool_calls:
             raise RuntimeError("Provider returned neither content nor tool calls")
@@ -277,7 +284,6 @@ class AgentRunner:
     ) -> None:
         await self._enter_phase(state, RunPhase.REFLECT, step=state.step_count)
         reflection_state = state.model_copy(deep=True)
-        reflection_state.observations = []
         reflection_state.messages.append(
             Message(
                 role=MessageRole.USER,
@@ -287,10 +293,11 @@ class AgentRunner:
                 ),
             )
         )
+        model_tools, _ = self._model_tools()
         context = await self.context_engineer.build(
             reflection_state,
             phase="reflect",
-            tools=self.tools.specs(),
+            tools=model_tools,
             system_prompt=REFLECT_SYSTEM_PROMPT,
         )
         if context.compacted:
@@ -323,10 +330,11 @@ class AgentRunner:
         recovery_state = state.model_copy(deep=True)
         recovery_state.goal = recovery_goal
         recovery_state.plan = previous_plan
+        model_tools, _ = self._model_tools()
         context = await self.context_engineer.build(
             recovery_state,
             phase="plan",
-            tools=self.tools.specs(),
+            tools=model_tools,
             system_prompt=PLAN_SYSTEM_PROMPT,
         )
         if context.compacted:
@@ -361,6 +369,7 @@ class AgentRunner:
         cancel_event: asyncio.Event,
         response_format: dict[str, Any] | None = None,
         max_tokens: int | None = None,
+        tool_name_map: dict[str, str] | None = None,
     ) -> ProviderResponse:
         provider_name = state.metadata.get("provider_by_phase", {}).get(phase, state.provider)
         model_name = state.metadata.get("model_by_phase", {}).get(
@@ -407,6 +416,9 @@ class AgentRunner:
         cancel_task.cancel()
         await asyncio.gather(cancel_task, return_exceptions=True)
         response = task.result()
+        if tool_name_map:
+            for call in response.tool_calls:
+                call.name = tool_name_map.get(call.name, call.name)
 
         state.token_budget.prompt_tokens += response.usage.prompt_tokens
         state.token_budget.completion_tokens += response.usage.completion_tokens
@@ -426,6 +438,19 @@ class AgentRunner:
             },
         )
         return response
+
+    def _model_tools(self) -> tuple[list[Any], dict[str, str]]:
+        model_tools: list[Any] = []
+        name_map: dict[str, str] = {}
+        for spec in self.tools.specs():
+            safe_name = provider_safe_tool_name(spec.name)
+            if safe_name in name_map and name_map[safe_name] != spec.name:
+                raise RuntimeError(
+                    f"Provider tool name collision: {spec.name} and {name_map[safe_name]}"
+                )
+            name_map[safe_name] = spec.name
+            model_tools.append(spec.model_copy(update={"name": safe_name}))
+        return model_tools, name_map
 
     async def _enter_phase(
         self,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from agent_harness.api.container import AppContainer
 from agent_harness.domain.models import RuntimeStatus
+from agent_harness.runtime.agent import provider_safe_tool_name
 
 
 async def wait_for_terminal(container: AppContainer, task_id: str) -> dict:
@@ -57,3 +58,8 @@ async def test_resume_from_persisted_interrupted_state(container: AppContainer) 
     assert result["status"] == "completed"
     events = await container.repository.list_events(state.task_id)
     assert any(event["event_type"] == "recovery.started" for event in events)
+
+
+def test_provider_tool_names_are_function_call_safe() -> None:
+    assert provider_safe_tool_name("filesystem.read_file") == "filesystem_read_file"
+    assert provider_safe_tool_name("demo.github-search") == "demo_github-search"

@@ -66,19 +66,23 @@ class ContextEngineer:
                 )
             )
         messages.append(Message(role=MessageRole.USER, content=state.goal))
-        messages.extend(state.messages)
-
-        if state.observations:
-            observation_messages = [
-                Message(
-                    role=MessageRole.TOOL,
-                    name=result.tool_name,
-                    tool_call_id=result.call_id,
-                    content=self._serialize_tool_result(result),
+        observations_by_call = {result.call_id: result for result in state.observations}
+        for message in state.messages:
+            messages.append(message)
+            for tool_call in message.tool_calls:
+                result = observations_by_call.get(tool_call.id)
+                messages.append(
+                    Message(
+                        role=MessageRole.TOOL,
+                        name=tool_call.name,
+                        tool_call_id=tool_call.id,
+                        content=(
+                            self._serialize_tool_result(result)
+                            if result is not None
+                            else "Tool result unavailable because the task was interrupted."
+                        ),
+                    )
                 )
-                for result in state.observations[-8:]
-            ]
-            messages.extend(observation_messages)
 
         if state.reflections:
             messages.append(
