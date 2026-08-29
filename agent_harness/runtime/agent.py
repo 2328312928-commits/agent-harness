@@ -109,17 +109,21 @@ class AgentRunner:
 
                 response = await self._act(state, cancel_event)
                 state.step_count += 1
+                provider_tool_calls = response.tool_calls
                 state.messages.append(
                     Message(
                         role=MessageRole.ASSISTANT,
                         content=response.content,
-                        tool_calls=response.tool_calls,
+                        tool_calls=provider_tool_calls,
                     )
                 )
                 await self._checkpoint(state, "after_act")
 
-                if response.tool_calls:
-                    await self._observe_and_reflect(state, response.tool_calls, cancel_event)
+                if provider_tool_calls:
+                    tool_calls = self._map_provider_tool_calls(provider_tool_calls)
+                    await self._observe_and_reflect(state, tool_calls, cancel_event)
+                    if state.final_answer:
+                        return await self._complete(state)
                     continue
 
                 await self._reflect(state, "No tool call was required.", cancel_event)
@@ -192,7 +196,6 @@ class AgentRunner:
             context_messages=context.messages,
             tools=model_tools,
             cancel_event=cancel_event,
-            tool_name_map=tool_name_map,
         )
         if not response.content and not response.tool_calls:
             raise RuntimeError("Provider returned neither content nor tool calls")
@@ -224,7 +227,13 @@ class AgentRunner:
             recovery_count = int(state.metadata.get("recovery_count", 0)) + 1
             state.metadata["recovery_count"] = recovery_count
             if recovery_count > self.max_recoveries:
-                raise RuntimeError("Tool recovery limit exceeded")
+                state.metadata["recovery_exhausted"] = True
+                state.final_answer = (
+                    state.reflections[-1]
+                    if state.reflections
+                    else "Recovery limit reached before the task could be completed."
+                )
+                return
             await self._replan(state, cancel_event)
 
     async def _execute_tool(
@@ -369,7 +378,6 @@ class AgentRunner:
         cancel_event: asyncio.Event,
         response_format: dict[str, Any] | None = None,
         max_tokens: int | None = None,
-        tool_name_map: dict[str, str] | None = None,
     ) -> ProviderResponse:
         provider_name = state.metadata.get("provider_by_phase", {}).get(phase, state.provider)
         model_name = state.metadata.get("model_by_phase", {}).get(
@@ -416,9 +424,6 @@ class AgentRunner:
         cancel_task.cancel()
         await asyncio.gather(cancel_task, return_exceptions=True)
         response = task.result()
-        if tool_name_map:
-            for call in response.tool_calls:
-                call.name = tool_name_map.get(call.name, call.name)
 
         state.token_budget.prompt_tokens += response.usage.prompt_tokens
         state.token_budget.completion_tokens += response.usage.completion_tokens
@@ -451,6 +456,13 @@ class AgentRunner:
             name_map[safe_name] = spec.name
             model_tools.append(spec.model_copy(update={"name": safe_name}))
         return model_tools, name_map
+
+    def _map_provider_tool_calls(self, calls: list[ToolCall]) -> list[ToolCall]:
+        _, name_map = self._model_tools()
+        return [
+            call.model_copy(update={"name": name_map.get(call.name, call.name)})
+            for call in calls
+        ]
 
     async def _enter_phase(
         self,

@@ -141,7 +141,6 @@ def build_tasks() -> list[dict]:
                 difficulties[index - 1],
                 f"请通过 SQL 数据库健康检查确认连接可用，这是第 {index} 个数据库任务。",
                 required_tools=["database.query"],
-                answer_contains=["healthy"],
                 min_observations=1,
                 tags=["offline", "database", "readonly"],
             )

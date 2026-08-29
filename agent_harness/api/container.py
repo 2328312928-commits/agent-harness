@@ -141,6 +141,6 @@ class AppContainer:
             "args": ["-m", "agent_harness.mcp.demo_server"],
             "env": {"MCP_WORKSPACE_ROOT": str(self.settings.resolved_workspace_root)},
             "permissions": ["read", "network", "execute", "database", "github", "browser"],
-            "idempotent": True,
-            "timeout_seconds": 60,
+            "idempotent": False,
+            "timeout_seconds": 20,
         }

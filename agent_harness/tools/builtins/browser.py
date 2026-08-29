@@ -66,7 +66,7 @@ class BrowserFetchTool(Tool):
         },
         permissions=[ToolPermission.NETWORK, ToolPermission.BROWSER],
         idempotent=True,
-        timeout_seconds=25,
+        timeout_seconds=15,
     )
 
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:

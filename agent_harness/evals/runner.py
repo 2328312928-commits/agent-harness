@@ -141,7 +141,7 @@ class EvalRunner:
             provider=provider,
             model=model,
             max_steps=task.max_steps,
-            token_budget=min(self.runner.default_token_budget, 16_000),
+            token_budget=self.runner.default_token_budget,
             metadata={
                 "eval_task_id": task.id,
                 "eval_category": task.category,

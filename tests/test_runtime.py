@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from agent_harness.api.container import AppContainer
-from agent_harness.domain.models import RuntimeStatus
+from agent_harness.domain.models import RuntimeStatus, ToolCall
 from agent_harness.runtime.agent import provider_safe_tool_name
 
 
@@ -44,6 +44,19 @@ async def test_permission_failure_recovers(container: AppContainer) -> None:
     assert result["observations"][0]["error_type"] == "tool_permission_denied"
 
 
+async def test_recovery_limit_returns_final_reflection(container: AppContainer) -> None:
+    container.runtime.runner.max_recoveries = 0
+    state = await container.runtime.start(
+        "请读取 examples/demo.txt",
+        provider="fake",
+        metadata={"tool_permissions": []},
+    )
+    result = await wait_for_terminal(container, state.task_id)
+    assert result["status"] == "completed"
+    assert result["metadata"]["recovery_exhausted"] is True
+    assert result["final_answer"]
+
+
 async def test_resume_from_persisted_interrupted_state(container: AppContainer) -> None:
     state = container.runtime.runner.create_state(
         "请列出目录 . 下的文件列表",
@@ -63,3 +76,12 @@ async def test_resume_from_persisted_interrupted_state(container: AppContainer) 
 def test_provider_tool_names_are_function_call_safe() -> None:
     assert provider_safe_tool_name("filesystem.read_file") == "filesystem_read_file"
     assert provider_safe_tool_name("demo.github-search") == "demo_github-search"
+
+
+async def test_provider_tool_calls_map_back_to_registry_names(
+    container: AppContainer,
+) -> None:
+    calls = container.runtime.runner._map_provider_tool_calls(
+        [ToolCall(name="filesystem_read_file", arguments={"path": "examples/demo.txt"})]
+    )
+    assert calls[0].name == "filesystem.read_file"

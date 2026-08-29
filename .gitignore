@@ -12,6 +12,9 @@ build/
 *.egg-info/
 data/
 checkpoints/
+workspace/*
+!workspace/examples/
+!workspace/examples/demo.txt
 .DS_Store
 node_modules/
 web/dist/

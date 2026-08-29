@@ -93,6 +93,7 @@ def render_report(summary) -> str:
     categories: dict[str, list] = {}
     for result in summary.results:
         categories.setdefault(result.category, []).append(result)
+    category_arg = ",".join(sorted(categories))
     rows = []
     for category, results in sorted(categories.items()):
         success = sum(1 for result in results if result.success) / len(results)
@@ -154,7 +155,11 @@ def render_report(summary) -> str:
 
 ```bash
 python scripts/build_eval_dataset.py
-python scripts/run_benchmark.py --provider {summary.provider} --limit {len(results)}
+python scripts/run_benchmark.py \\
+  --provider {summary.provider} \\
+  --model {summary.model} \\
+  --categories {category_arg} \\
+  --limit {len(results)}
 ```
 
 The dataset contains 110 tasks across reasoning, filesystem, coding, database,
