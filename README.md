@@ -127,6 +127,11 @@ Runtime、工具契约、恢复链路与评测管线，不冒充真实模型的�
 P95 2.18s、恢复成功率 100%。该结果用于证明 Runtime 本身可工作，不表示模型能力。
 真实 DeepSeek 评测流程见 [model-benchmark.md](docs/model-benchmark.md)。
 
+DeepSeek `deepseek-chat` 的 100 条真实模型任务结果为：任务成功率 100%、工具准确率
+100%、P50 7.32s、P95 15.43s、总成本约 `$0.4563`、恢复成功率 100%。完整报告见
+[deepseek-chat-main.md](docs/benchmarks/deepseek-chat-main.md)。Browser 网络类别作为
+独立集成测试保留，不计入这 100 条稳定基线。
+
 ## API 示例
 
 创建并执行任务：
