@@ -1,7 +1,7 @@
 # Agent Harness
 
 [![CI](https://github.com/2328312928-commits/agent-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/2328312928-commits/agent-harness/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/2328312928-commits/agent-harness)](https://github.com/2328312928-commits/agent-harness/releases/tag/v0.1.0)
+[![Release](https://img.shields.io/github/v/release/2328312928-commits/agent-harness)](https://github.com/2328312928-commits/agent-harness/releases)
 [![License](https://img.shields.io/github/license/2328312928-commits/agent-harness)](LICENSE)
 
 一个可检查点恢复、可观测、可评测的开源 Agent Runtime。它不是只包一层聊天界面，
