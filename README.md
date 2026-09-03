@@ -17,6 +17,13 @@ Render 免费实例在空闲后会休眠，首次访问可能需要几十秒唤�
 `FakeProvider`；云端未挂载 Docker Socket，因此代码执行工具会安全失败并由 Runtime
 进入恢复流程。完整 Docker Sandbox 请使用本地 Compose 部署。
 
+## Demo Video
+
+[观看 4 分 23 秒架构与技术演示](artifacts/video/agent-harness-demo.webm)
+
+视频不包含语音，使用分阶段中文字幕，覆盖任务闭环、Trace、MCP 工具、Sandbox、
+DeepSeek Benchmark、故障案例和 Release 交付物。
+
 ## 核心能力
 
 - **Agent Loop**：完整执行 `Plan -> Act -> Observe -> Reflect -> Finalize`，工具失败后自动反思并重新规划。

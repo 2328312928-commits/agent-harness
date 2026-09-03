@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "smoke": "node scripts/visual-smoke.mjs"
+    "smoke": "node scripts/visual-smoke.mjs",
+    "record-demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.66.0",
