@@ -16,6 +16,7 @@ workspace/*
 !workspace/examples/
 !workspace/examples/demo.txt
 artifacts/video/parts/
+artifacts/video/short-parts/
 artifacts/video/frames/
 .DS_Store
 node_modules/

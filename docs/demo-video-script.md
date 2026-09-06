@@ -1,94 +1,49 @@
-# 3-5 Minute Architecture and Demo Video
+# 1-2 Minute Product Demo
 
-## 0:00-0:30 Problem
+## Goal
 
-Show the README headline and architecture diagram.
+Show the running product with real interactions. Do not spend time reading Markdown
+files or explaining the architecture line by line.
 
-Script:
+## 0:00-0:06 Console
 
-> Most agent demos stop at a chat box. The hard engineering problem is not generating
-> one response; it is controlling tools, preserving state, recovering from failure, and
-> measuring the system. Agent Harness makes that runtime explicit.
+- Show the live metrics and task composer.
+- Caption: `运行任务，观察真实 Agent 执行数据`.
 
-## 0:30-1:10 Architecture
+## 0:06-0:28 Create and Execute
 
-Show `docs/architecture.md`.
+- Click `Run task`.
+- Show the live Trace entering Plan and Act.
+- Wait for the first checkpoint and tool observation.
+- Caption: `模型选择工具，观察结果后继续执行`.
 
-Script:
+## 0:28-0:43 Trace and Checkpoint
 
-> A task moves through Plan, Act, Observe, Reflect, and Finalize. Each phase writes a
-> checkpoint. Tools pass through JSON Schema validation, permissions, timeout,
-> idempotent retry, and cancellation. Provider, memory, tools, and sandbox are all
-> replaceable boundaries.
+- Scroll the event timeline.
+- Highlight model requests, tool calls, observations, reflection, and checkpoint events.
+- Caption: `每个阶段写入持久化事件，可恢复、可追踪`.
 
-## 1:10-2:00 Interactive Demo
+## 0:43-1:01 Tools and MCP
 
-Open the React console.
+- Open the Tools page.
+- Click an MCP tool contract.
+- Caption: `14 个工具经过统一校验、权限和超时控制`.
 
-1. Run the preset `读取 Demo 文件并计算 12 + 7`.
-2. Open Trace.
-3. Highlight the two tool calls and the checkpoints between phases.
-4. Open Observations and show that the sandbox returned `19`.
+## 1:01-1:14 Evaluation
 
-Script:
+- Open the Evaluation page and show persisted run results.
+- Caption: `在线运行评测，查看成功率、延迟和逐任务结果`.
 
-> This is not a canned animation. The API created a task, the fake provider selected
-> tools, the registry executed them, and every event was persisted. The Trace page is
-> reading the same event records used by recovery.
+## 1:14-1:24 Result
 
-## 2:00-2:40 MCP and Sandbox
+- Show the DeepSeek 100-task report.
+- Caption: `100 条真实任务：成功率 100%，P95 15.43s`.
 
-Open Tools.
+## Recording Rules
 
-Script:
+- Prewarm all pages before recording.
+- Keep captions to one title and one sentence.
+- Do not show cold starts, browser navigation bars, or long Markdown scrolling.
+- Prefer 1280x720 at 25fps.
+- Target duration: 80-120 seconds.
 
-> The runtime has 14 registered tool contracts. Nine are built in, and five are loaded
-> through MCP from the bundled stdio server: filesystem, GitHub, database, browser, and
-> constrained Python execution. MCP calls still pass through the same validation and
-> authorization pipeline.
-
-Show the Docker sandbox settings.
-
-> Production code execution uses a read-only, non-root container with networking off,
-> capabilities dropped, and CPU, memory, PID, and time limits.
-
-## 2:40-3:30 Evaluation
-
-Open the Evaluation view and `docs/benchmark-report.md`.
-
-Script:
-
-> The checked-in deterministic baseline covers 110 tasks. The current harness regression
-> result is 100 percent task success, 100 percent tool accuracy, a P50 of 484
-> milliseconds, and a P95 of 2.18 seconds. This is explicitly labeled as a harness
-> benchmark. Switching the provider to DeepSeek produces a model benchmark through the
-> same runner and grader.
-
-## 3:30-4:00 Failure and Recovery
-
-Run a permission-restricted task or show `docs/failure-cases.md`.
-
-Script:
-
-> Recovery is tested, not just documented. With tool permissions removed, the first call
-> fails, reflection records the failure, the runtime rebuilds the plan, and the task
-> completes with a recovery count of one.
-
-## 4:00-4:30 Close
-
-Show the GitHub repository and release notes.
-
-Script:
-
-> The repository includes one-command Compose startup, API documentation, 110 eval
-> tasks, persisted traces, MCP integration tests, sandbox controls, and failure cases
-> discovered during development. The next step is running the same benchmark against
-> DeepSeek and publishing the model comparison.
-
-## Recording Checklist
-
-- Use 1440p or 1080p, terminal font at least 16px.
-- Keep the browser at 100 percent zoom.
-- Record system audio or add narration in editing.
-- Show a real new task; do not edit the JSON while recording.
-- Keep the final video between 3:00 and 5:00.

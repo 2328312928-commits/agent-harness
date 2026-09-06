@@ -3,17 +3,22 @@ import { mkdir, rename } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const edge = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
-const baseUrl = process.env.HARNESS_WEB_URL ?? "http://127.0.0.1:8080";
+const baseUrl = process.env.HARNESS_WEB_URL ?? "https://agent-harness-console.onrender.com";
 const outputDir = resolve(process.cwd(), "../artifacts/video");
-const videoDir = resolve(outputDir, "parts");
-const fast = process.env.SHOWCASE_FAST === "1";
-const scale = fast ? 0.05 : 1;
+const videoDir = resolve(outputDir, "short-parts");
 
 await mkdir(videoDir, { recursive: true });
 const browser = await chromium.launch({
   executablePath: edge,
   headless: true,
 });
+
+const warmContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+const warmPage = await warmContext.newPage();
+await warmPage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
+await warmPage.getByRole("heading", { name: "New run" }).waitFor({ timeout: 120_000 });
+await warmContext.close();
+
 const context = await browser.newContext({
   viewport: { width: 1280, height: 720 },
   recordVideo: {
@@ -35,135 +40,135 @@ async function caption(title, text) {
             #agent-harness-caption {
               position: fixed;
               z-index: 2147483647;
-              left: 32px;
-              right: 32px;
-              bottom: 24px;
-              padding: 15px 19px 16px;
-              color: #f5f8fc;
+              left: 24px;
+              right: 24px;
+              bottom: 20px;
+              padding: 11px 15px;
+              color: #f6f8fb;
               background: rgba(8, 13, 20, 0.94);
-              border: 1px solid #344154;
               border-left: 4px solid #e9a23b;
-              border-radius: 6px;
-              box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+              border-radius: 5px;
+              box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
               font-family: "Microsoft YaHei", sans-serif;
               pointer-events: none;
             }
-            #agent-harness-caption .caption-label {
+            #agent-harness-caption strong {
               color: #e9a23b;
               font-size: 13px;
-              font-weight: 700;
-              margin-bottom: 6px;
-              letter-spacing: 0;
+              margin-right: 10px;
             }
-            #agent-harness-caption .caption-text {
-              font-size: 21px;
-              line-height: 1.5;
+            #agent-harness-caption span {
+              font-size: 18px;
               font-weight: 600;
-              letter-spacing: 0;
+            }
+            #agent-harness-pointer {
+              position: fixed;
+              z-index: 2147483646;
+              width: 18px;
+              height: 18px;
+              margin: -9px 0 0 -9px;
+              border: 3px solid #fff;
+              border-radius: 50%;
+              background: #e24747;
+              box-shadow: 0 0 0 4px rgba(226, 71, 71, 0.28);
+              pointer-events: none;
             }
           </style>
-          <div class="caption-label"></div>
-          <div class="caption-text"></div>
+          <strong></strong><span></span>
         `;
         document.documentElement.appendChild(overlay);
+        const pointer = document.createElement("div");
+        pointer.id = "agent-harness-pointer";
+        pointer.style.display = "none";
+        document.documentElement.appendChild(pointer);
       }
-      overlay.querySelector(".caption-label").textContent = title;
-      overlay.querySelector(".caption-text").textContent = text;
+      overlay.querySelector("strong").textContent = title;
+      overlay.querySelector("span").textContent = text;
     },
     { title, text },
   );
 }
 
-async function wait(seconds) {
-  await page.waitForTimeout(Math.max(250, seconds * 1000 * scale));
+async function movePointer(page, x, y) {
+  await page.evaluate(
+    ({ x, y }) => {
+      const pointer = document.getElementById("agent-harness-pointer");
+      if (pointer) {
+        pointer.style.display = "block";
+        pointer.style.left = `${x}px`;
+        pointer.style.top = `${y}px`;
+      }
+    },
+    { x, y },
+  );
 }
 
-async function open(url, title, text) {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90_000 });
-  await wait(1);
-  await caption(title, text);
+async function click(locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("Element is not visible");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y, { steps: 8 });
+  await movePointer(page, x, y);
+  await page.waitForTimeout(350);
+  await locator.click();
+}
+
+async function wait(seconds) {
+  await page.waitForTimeout(seconds * 1000);
 }
 
 try {
-  await open(
-    "https://github.com/2328312928-commits/agent-harness",
-    "Agent Harness",
-    "一个可检查点恢复、可观测、可评测的 Agent Runtime，而不是只包一层聊天界面。",
-  );
-  await wait(16);
+  await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.getByRole("heading", { name: "New run" }).waitFor({ timeout: 120_000 });
+  await caption("ONLINE DEMO", "运行任务，观察真实 Agent 执行数据");
+  await wait(6);
 
-  await open(
-    "https://github.com/2328312928-commits/agent-harness#architecture",
-    "系统架构",
-    "Runtime 将 Provider、Tool、MCP、Memory、Context、Sandbox、Checkpoint 和 Eval 拆成可替换组件。",
-  );
-  await wait(24);
-
-  await open(
-    baseUrl,
-    "任务运行",
-    "控制台展示任务完成率、延迟、Checkpoint 数量和成本，所有数据来自持久化记录。",
-  );
-  await wait(18);
-
-  await page.getByRole("button", { name: "Run task" }).click();
-  await wait(3);
-  await caption(
-    "Plan → Act → Observe → Reflect",
-    "任务被后端真实执行，不是前端动画。模型先规划，再按状态机调用工具并检查结果。",
-  );
+  await click(page.getByRole("button", { name: "Run task" }));
+  await caption("CREATE", "提交任务，后端开始 Plan");
+  await page.getByText("Plan", { exact: true }).first().waitFor({ timeout: 30_000 });
   await page.getByText("Checkpoint saved").first().waitFor({ timeout: 30_000 });
-  await wait(25);
+  await wait(7);
 
-  await caption(
-    "实时 Trace 与恢复",
-    "模型请求、工具参数、Observation、Reflection、Token、延迟和 Checkpoint 都会写入事件存储。",
-  );
-  await wait(24);
+  await caption("ACT → OBSERVE", "模型选择工具，观察结果后继续执行");
+  await page.getByText("Task completed").first().waitFor({ timeout: 45_000 });
+  await wait(9);
 
-  await page.getByRole("button", { name: "工具" }).click();
+  await caption("CHECKPOINT", "每个阶段写入持久化事件，可恢复、可追踪");
+  await page.locator(".timeline").scrollIntoViewIfNeeded();
+  await wait(7);
+
+  await click(page.getByRole("button", { name: "工具" }));
   await page.getByRole("heading", { name: "Registered tools" }).waitFor();
-  await caption(
-    "MCP 工具注册表",
-    "14 个工具契约统一经过 Schema 校验、权限、超时、取消和幂等重试；其中 5 个由独立 MCP Server 动态发现。",
-  );
-  await wait(28);
+  await caption("MCP + TOOLS", "14 个工具经过统一校验、权限和超时控制");
+  await wait(10);
+  await click(page.locator(".tool-card").nth(10));
+  await caption("TOOL CONTRACT", "5 个工具由独立 MCP Server 动态加载");
+  await wait(8);
 
-  await open(
+  await click(page.getByRole("button", { name: "评测" }));
+  await page.getByRole("heading", { name: "Benchmark" }).waitFor();
+  await caption("EVAL", "在线运行评测，查看成功率、延迟和逐任务结果");
+  await wait(11);
+
+  await page.goto(
     "https://github.com/2328312928-commits/agent-harness/blob/main/docs/benchmarks/deepseek-chat-main.md",
-    "真实模型评测",
-    "DeepSeek Chat 在 100 条稳定任务上全部通过，工具正确率 100%，P95 15.43 秒，总成本约 0.456 美元。",
+    { waitUntil: "domcontentloaded", timeout: 120_000 },
   );
-  await wait(30);
+  await caption("DEEPSEEK", "100 条真实任务：成功率 100%，P95 15.43s");
+  await wait(10);
 
-  await open(
-    "https://github.com/2328312928-commits/agent-harness/blob/main/docs/failure-cases.md",
-    "故障案例",
-    "项目记录了 Tool 名称兼容、Tool Call 消息配对、SQLite 并发锁、MCP 超时和恢复上限等真实问题及修复。",
-  );
-  await wait(27);
-
-  await open(
-    "https://github.com/2328312928-commits/agent-harness/releases/tag/v0.1.0",
-    "交付物",
-    "在线 Demo、Docker Compose、架构图、设计文档、110 条评测集、Release 和可复现 Benchmark 均已发布。",
-  );
-  await wait(22);
-
-  await caption(
-    "结果",
-    "这个项目展示的不只是模型调用，而是完整 Agent Runtime 的工程闭环：可运行、可恢复、可观测、可评测。",
-  );
-  await wait(18);
+  await caption("RESULT", "可运行、可恢复、可观测、可评测");
+  await wait(6);
 } finally {
   const video = page.video();
   await context.close();
   await browser.close();
   if (video) {
     const source = await video.path();
-    await rename(source, resolve(outputDir, "agent-harness-demo.webm"));
+    await rename(source, resolve(outputDir, "agent-harness-demo-short.webm"));
   }
 }
 
-console.log(resolve(outputDir, "agent-harness-demo.webm"));
+console.log(resolve(outputDir, "agent-harness-demo-short.webm"));
 
