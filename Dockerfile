@@ -12,6 +12,7 @@ RUN apt-get update \
 
 COPY pyproject.toml README.md ./
 COPY agent_harness ./agent_harness
+COPY evals/dataset ./evals/dataset
 RUN pip install --upgrade pip && pip install .
 
 RUN useradd --create-home --uid 10001 harness \
