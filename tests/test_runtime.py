@@ -9,7 +9,7 @@ async def wait_for_terminal(container: AppContainer, task_id: str) -> dict:
     while True:
         state = await container.repository.get_task(task_id)
         assert state is not None
-        if state.status.value in {"completed", "failed", "cancelled"}:
+        if state.status.value in {"completed", "partial", "failed", "cancelled"}:
             return state.model_dump(mode="json")
         await __import__("asyncio").sleep(0.02)
 
@@ -52,7 +52,7 @@ async def test_recovery_limit_returns_final_reflection(container: AppContainer) 
         metadata={"tool_permissions": []},
     )
     result = await wait_for_terminal(container, state.task_id)
-    assert result["status"] == "completed"
+    assert result["status"] == "partial"
     assert result["metadata"]["recovery_exhausted"] is True
     assert result["final_answer"]
 

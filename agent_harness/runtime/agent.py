@@ -123,7 +123,7 @@ class AgentRunner:
                     tool_calls = self._map_provider_tool_calls(provider_tool_calls)
                     await self._observe_and_reflect(state, tool_calls, cancel_event)
                     if state.final_answer:
-                        return await self._complete(state)
+                        return await self._partial(state)
                     continue
 
                 await self._reflect(state, "No tool call was required.", cancel_event)
@@ -508,6 +508,27 @@ class AgentRunner:
                 "final_answer": state.final_answer,
                 "total_tokens": state.token_budget.total_tokens,
                 "checkpoint_version": state.checkpoint_version,
+            },
+        )
+        await self.tracer.bus.close(state.task_id)
+        return state
+
+    async def _partial(self, state: AgentState) -> AgentState:
+        await self._enter_phase(state, RunPhase.FINALIZE)
+        state.status = RuntimeStatus.PARTIAL
+        state.completed_at = datetime.now(UTC)
+        state.updated_at = state.completed_at
+        await self.repository.update_task(state)
+        await self._checkpoint(state, "partial")
+        await self.tracer.emit(
+            task_id=state.task_id,
+            event_type=TraceEventType.TASK_PARTIAL,
+            phase=RunPhase.FINALIZE,
+            step=state.step_count,
+            payload={
+                "final_answer": state.final_answer,
+                "recovery_count": state.metadata.get("recovery_count", 0),
+                "recovery_exhausted": True,
             },
         )
         await self.tracer.bus.close(state.task_id)

@@ -327,8 +327,9 @@ class HarnessRepository:
             ).all()
         statuses = {status: count for status, count in status_rows}
         completed = statuses.get(RuntimeStatus.COMPLETED.value, 0)
+        partial = statuses.get(RuntimeStatus.PARTIAL.value, 0)
         failed = statuses.get(RuntimeStatus.FAILED.value, 0)
-        denominator = completed + failed
+        denominator = completed + partial + failed
         return {
             "tasks": {
                 "total": total_tasks,

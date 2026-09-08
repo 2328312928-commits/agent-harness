@@ -4,6 +4,7 @@ export type TaskStatus =
   | "waiting_for_tool"
   | "interrupted"
   | "completed"
+  | "partial"
   | "failed"
   | "cancelled";
 

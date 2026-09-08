@@ -22,6 +22,7 @@ class RuntimeStatus(StrEnum):
     WAITING_FOR_TOOL = "waiting_for_tool"
     INTERRUPTED = "interrupted"
     COMPLETED = "completed"
+    PARTIAL = "partial"
     FAILED = "failed"
     CANCELLED = "cancelled"
 
@@ -65,6 +66,7 @@ class TraceEventType(StrEnum):
     CHECKPOINT_SAVED = "checkpoint.saved"
     RECOVERY_STARTED = "recovery.started"
     TASK_COMPLETED = "task.completed"
+    TASK_PARTIAL = "task.partial"
     TASK_FAILED = "task.failed"
     TASK_CANCELLED = "task.cancelled"
     LOG = "log"

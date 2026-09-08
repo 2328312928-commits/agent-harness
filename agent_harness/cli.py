@@ -78,7 +78,12 @@ async def _run_task(goal: str, provider: str, max_steps: int) -> None:
         state = await container.runtime.start(goal, provider=provider, max_steps=max_steps)
         while True:
             current = await container.repository.get_task(state.task_id)
-            if current and current.status.value in {"completed", "failed", "cancelled"}:
+            if current and current.status.value in {
+                "completed",
+                "partial",
+                "failed",
+                "cancelled",
+            }:
                 typer.echo(current.model_dump_json(indent=2))
                 break
             await asyncio.sleep(0.25)

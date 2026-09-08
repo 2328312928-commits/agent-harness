@@ -10,6 +10,7 @@ const statusMeta: Record<
   waiting_for_tool: { label: "Tool", className: "warning", icon: LoaderCircle },
   interrupted: { label: "Interrupted", className: "warning", icon: CircleAlert },
   completed: { label: "Completed", className: "success", icon: CircleCheck },
+  partial: { label: "Partial", className: "warning", icon: CircleAlert },
   failed: { label: "Failed", className: "danger", icon: CircleAlert },
   cancelled: { label: "Cancelled", className: "neutral", icon: CircleStop },
 };
