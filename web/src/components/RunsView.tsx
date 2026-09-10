@@ -18,7 +18,7 @@ import type { Metrics, TaskSummary } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
 const presets = [
-  { label: "文件 + 计算", goal: "请读取 examples/demo.txt，然后计算 12 + 7", icon: FileCode2 },
+  { label: "读取文件", goal: "请读取 examples/demo.txt，并确认文件内容是否能够被访问", icon: FileCode2 },
   { label: "数据库", goal: "请通过 SQL 数据库健康检查确认连接可用", icon: Database },
   { label: "GitHub", goal: "请使用 GitHub 搜索仓库：agent runtime", icon: GitBranch },
 ];
@@ -37,7 +37,7 @@ export function RunsView({
   onOpenTrace: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [goal, setGoal] = useState("请读取 examples/demo.txt，然后计算 12 + 7");
+  const [goal, setGoal] = useState("请读取 examples/demo.txt，并确认文件内容是否能够被访问");
   const [provider, setProvider] = useState("fake");
   const [maxSteps, setMaxSteps] = useState(20);
 

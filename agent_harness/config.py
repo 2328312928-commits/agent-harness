@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
+    api_auth_token: str = ""
+    public_demo_mode: bool = False
+    allow_tool_playground: bool = False
+    public_demo_rate_limit_per_minute: int = 20
+    public_demo_max_steps: int = 8
+    public_demo_token_budget: int = 8_000
+    public_demo_eval_limit: int = 30
 
     database_url: str = "sqlite+aiosqlite:///./data/harness.db"
     redis_url: str = "redis://localhost:6379/0"

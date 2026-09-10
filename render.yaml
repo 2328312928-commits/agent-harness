@@ -25,6 +25,18 @@ services:
         value: /tmp/agent-harness-workspace
       - key: CORS_ORIGINS
         value: https://agent-harness-console.onrender.com
+      - key: PUBLIC_DEMO_MODE
+        value: "true"
+      - key: ALLOW_TOOL_PLAYGROUND
+        value: "false"
+      - key: PUBLIC_DEMO_RATE_LIMIT_PER_MINUTE
+        value: "20"
+      - key: PUBLIC_DEMO_MAX_STEPS
+        value: "8"
+      - key: PUBLIC_DEMO_TOKEN_BUDGET
+        value: "8000"
+      - key: PUBLIC_DEMO_EVAL_LIMIT
+        value: "30"
       - key: PYTHON_VERSION
         value: 3.12.7
 

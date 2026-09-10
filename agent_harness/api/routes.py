@@ -4,11 +4,12 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from agent_harness.api.container import AppContainer
 from agent_harness.api.schemas import EvalRunRequest, PlaygroundRequest, TaskCreateRequest
+from agent_harness.api.security import request_key, require_write_access
 from agent_harness.domain.errors import HarnessError
 from agent_harness.domain.models import ToolPermission
 from agent_harness.tools.base import ToolContext
@@ -35,6 +36,11 @@ async def health(request: Request) -> dict[str, Any]:
         "status": "ok",
         "app": app.settings.app_name,
         "environment": app.settings.app_env,
+        "capabilities": {
+            "public_demo_mode": app.settings.public_demo_mode,
+            "tool_playground_enabled": app.settings.allow_tool_playground,
+            "write_auth_required": bool(app.settings.api_auth_token),
+        },
         "providers": app.providers.catalog(),
         "tools": len(app.tools.specs()),
         "mcp": mcp_health,
@@ -54,8 +60,14 @@ async def tools(request: Request) -> dict[str, Any]:
 
 
 @router.post("/tools/playground")
-async def tool_playground(request: Request, body: PlaygroundRequest) -> dict[str, Any]:
+async def tool_playground(
+    request: Request,
+    body: PlaygroundRequest,
+    _auth: None = Depends(require_write_access),
+) -> dict[str, Any]:
     app = container(request)
+    if not app.settings.allow_tool_playground:
+        raise HTTPException(status_code=403, detail="Tool playground is disabled")
     context = ToolContext(
         task_id="playground",
         call_id="playground",
@@ -68,15 +80,42 @@ async def tool_playground(request: Request, body: PlaygroundRequest) -> dict[str
 
 
 @router.post("/tasks", status_code=status.HTTP_202_ACCEPTED)
-async def create_task(request: Request, body: TaskCreateRequest) -> dict[str, Any]:
+async def create_task(
+    request: Request,
+    body: TaskCreateRequest,
+    _auth: None = Depends(require_write_access),
+) -> dict[str, Any]:
+    app = container(request)
+    provider = body.provider
+    max_steps = body.max_steps
+    token_budget = body.token_budget
+    metadata = dict(body.metadata)
+    if app.settings.public_demo_mode:
+        if not await app.rate_limiter.allow(f"task:{request_key(request)}"):
+            raise HTTPException(status_code=429, detail="Public demo rate limit exceeded")
+        if provider not in {None, "fake"}:
+            raise HTTPException(
+                status_code=403,
+                detail="Public demo only allows the fake provider",
+            )
+        provider = "fake"
+        max_steps = min(max_steps, app.settings.public_demo_max_steps)
+        token_budget = min(token_budget, app.settings.public_demo_token_budget)
+        metadata["tool_permissions"] = [
+            "read",
+            "network",
+            "database",
+            "github",
+            "browser",
+        ]
     try:
-        state = await container(request).runtime.start(
+        state = await app.runtime.start(
             body.goal,
-            provider=body.provider,
+            provider=provider,
             model=body.model,
-            max_steps=body.max_steps,
-            token_budget=body.token_budget,
-            metadata=body.metadata,
+            max_steps=max_steps,
+            token_budget=token_budget,
+            metadata=metadata,
         )
     except HarnessError as exc:
         raise HTTPException(status_code=400, detail=exc.message) from exc
@@ -102,7 +141,11 @@ async def get_task(request: Request, task_id: str) -> dict[str, Any]:
 
 
 @router.post("/tasks/{task_id}/cancel")
-async def cancel_task(request: Request, task_id: str) -> dict[str, str]:
+async def cancel_task(
+    request: Request,
+    task_id: str,
+    _auth: None = Depends(require_write_access),
+) -> dict[str, str]:
     app = container(request)
     if await app.repository.get_task(task_id) is None:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -111,7 +154,11 @@ async def cancel_task(request: Request, task_id: str) -> dict[str, str]:
 
 
 @router.post("/tasks/{task_id}/resume")
-async def resume_task(request: Request, task_id: str) -> dict[str, Any]:
+async def resume_task(
+    request: Request,
+    task_id: str,
+    _auth: None = Depends(require_write_access),
+) -> dict[str, Any]:
     try:
         state = await container(request).runtime.resume(task_id)
     except KeyError as exc:
@@ -190,8 +237,23 @@ async def list_eval_tasks(request: Request, limit: int = 300) -> dict[str, Any]:
 
 
 @router.post("/evals/runs", status_code=status.HTTP_202_ACCEPTED)
-async def create_eval_run(request: Request, body: EvalRunRequest) -> dict[str, str]:
+async def create_eval_run(
+    request: Request,
+    body: EvalRunRequest,
+    _auth: None = Depends(require_write_access),
+) -> dict[str, str]:
     app = container(request)
+    if app.settings.public_demo_mode:
+        if not await app.rate_limiter.allow(f"eval:{request_key(request)}"):
+            raise HTTPException(status_code=429, detail="Public demo rate limit exceeded")
+        if body.provider not in {None, "fake"}:
+            raise HTTPException(
+                status_code=403,
+                detail="Public demo only allows the fake provider",
+            )
+        body.provider = "fake"
+        body.limit = min(body.limit, app.settings.public_demo_eval_limit)
+        body.concurrency = min(body.concurrency, 2)
     run_id = await app.evals.start_background(
         provider=body.provider,
         model=body.model,

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from agent_harness.api.security import SlidingWindowRateLimiter
 from agent_harness.config import Settings
 from agent_harness.context.engineer import ContextEngineer
 from agent_harness.evals.runner import EvalRunner
@@ -43,9 +44,28 @@ class AppContainer:
     runtime: RuntimeManager = field(init=False)
     evals: EvalRunner = field(init=False)
     mcp_clients: list[MCPClient] = field(default_factory=list)
+    rate_limiter: SlidingWindowRateLimiter = field(init=False)
 
     async def startup(self) -> None:
-        self.settings.resolved_workspace_root.mkdir(parents=True, exist_ok=True)
+        if (
+            self.settings.app_env == "production"
+            and not self.settings.public_demo_mode
+            and not self.settings.api_auth_token
+        ):
+            raise RuntimeError(
+                "Production write API requires API_AUTH_TOKEN or PUBLIC_DEMO_MODE=true"
+            )
+        examples_dir = self.settings.resolved_workspace_root / "examples"
+        examples_dir.mkdir(parents=True, exist_ok=True)
+        demo_file = examples_dir / "demo.txt"
+        if not demo_file.exists():
+            demo_file.write_text(
+                "Agent Harness demo workspace.\n",
+                encoding="utf-8",
+            )
+        self.rate_limiter = SlidingWindowRateLimiter(
+            limit=self.settings.public_demo_rate_limit_per_minute
+        )
         self.database = Database(self.settings.database_url)
         await self.database.initialize()
         self.repository = HarnessRepository(self.database)
