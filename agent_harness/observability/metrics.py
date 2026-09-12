@@ -12,6 +12,10 @@ MODEL_PRICING_PER_MILLION: dict[str, tuple[float, float]] = {
 
 class CostCalculator:
     @staticmethod
+    def is_known(model: str) -> bool:
+        return model in MODEL_PRICING_PER_MILLION
+
+    @staticmethod
     def estimate_usd(model: str, prompt_tokens: int, completion_tokens: int) -> float:
         input_price, output_price = MODEL_PRICING_PER_MILLION.get(model, (0.0, 0.0))
         return (

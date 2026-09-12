@@ -254,6 +254,7 @@ class EvalResult(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     estimated_cost_usd: float
+    cost_known: bool = False
     recovered: bool = False
     error: str | None = None
     answer: str | None = None

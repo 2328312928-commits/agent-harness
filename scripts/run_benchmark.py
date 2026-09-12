@@ -94,6 +94,12 @@ def render_report(summary) -> str:
     for result in summary.results:
         categories.setdefault(result.category, []).append(result)
     category_arg = ",".join(sorted(categories))
+    cost_known = bool(summary.results) and all(
+        result.cost_known for result in summary.results
+    )
+    cost_display = (
+        f"${summary.total_cost_usd:.4f}" if cost_known else "N/A (provider pricing unavailable)"
+    )
     rows = []
     for category, results in sorted(categories.items()):
         success = sum(1 for result in results if result.success) / len(results)
@@ -146,7 +152,7 @@ def render_report(summary) -> str:
 | P95 latency | {summary.p95_latency_ms:.1f} ms |
 | Prompt tokens | {summary.total_prompt_tokens:,} |
 | Completion tokens | {summary.total_completion_tokens:,} |
-| Estimated cost | ${summary.total_cost_usd:.4f} |
+| Estimated cost | {cost_display} |
 | Recovery success | {summary.recovery_success_rate:.1%} |
 
 ## By Category

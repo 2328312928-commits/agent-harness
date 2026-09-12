@@ -168,6 +168,7 @@ class EvalRunner:
             result_state.token_budget.prompt_tokens,
             result_state.token_budget.completion_tokens,
         )
+        cost_known = CostCalculator.is_known(result_state.model)
         return EvalResult(
             task_id=task.id,
             category=task.category,
@@ -180,6 +181,7 @@ class EvalRunner:
             prompt_tokens=result_state.token_budget.prompt_tokens,
             completion_tokens=result_state.token_budget.completion_tokens,
             estimated_cost_usd=cost,
+            cost_known=cost_known,
             recovered=int(result_state.metadata.get("recovery_count", 0)) > 0,
             error=result_state.error,
             answer=result_state.final_answer,
