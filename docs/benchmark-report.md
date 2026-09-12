@@ -6,13 +6,13 @@
 
 | Field | Value |
 | --- | --- |
-| Run ID | `fake-benchmark-20260912-150606` |
+| Run ID | `fake-benchmark-20260912-155841` |
 | Provider | `fake` |
 | Model | `fake-deterministic-v1` |
 | Strategy | `plan-and-execute` |
 | Tasks | 110 |
-| Started | 2026-09-12T15:06:06.846672+00:00 |
-| Completed | 2026-09-12T15:06:28.658288+00:00 |
+| Started | 2026-09-12T15:58:41.706573+00:00 |
+| Completed | 2026-09-12T15:59:04.701405+00:00 |
 
 ## Headline Metrics
 
@@ -20,10 +20,10 @@
 | --- | ---: |
 | Task success rate | 73.6% |
 | Tool accuracy | 90.9% |
-| P50 latency | 553.0 ms |
-| P95 latency | 2083.0 ms |
-| Prompt tokens | 427,987 |
-| Completion tokens | 47,609 |
+| P50 latency | 469.8 ms |
+| P95 latency | 2453.2 ms |
+| Prompt tokens | 431,070 |
+| Completion tokens | 48,216 |
 | Estimated cost | $0.0000 |
 | Recovery success | 100.0% |
 
@@ -31,17 +31,17 @@
 
 | Category | Tasks | Success | Tool accuracy | P95 |
 | --- | ---: | ---: | ---: | ---: |
-| browser | 10 | 0.0% | 0.0% | 1607 ms |
-| coding | 10 | 100.0% | 100.0% | 1179 ms |
-| context | 10 | 0.0% | 100.0% | 1015 ms |
-| database | 10 | 100.0% | 100.0% | 1320 ms |
-| filesystem_list | 10 | 100.0% | 100.0% | 1384 ms |
-| filesystem_read | 10 | 100.0% | 100.0% | 553 ms |
-| github | 10 | 100.0% | 100.0% | 3173 ms |
-| memory | 10 | 100.0% | 100.0% | 1533 ms |
-| mixed | 10 | 100.0% | 100.0% | 1074 ms |
-| reasoning | 10 | 10.0% | 100.0% | 1089 ms |
-| recovery | 10 | 100.0% | 100.0% | 849 ms |
+| browser | 10 | 0.0% | 0.0% | 654 ms |
+| coding | 10 | 100.0% | 100.0% | 489 ms |
+| context | 10 | 0.0% | 100.0% | 1073 ms |
+| database | 10 | 100.0% | 100.0% | 800 ms |
+| filesystem_list | 10 | 100.0% | 100.0% | 2497 ms |
+| filesystem_read | 10 | 100.0% | 100.0% | 1313 ms |
+| github | 10 | 100.0% | 100.0% | 2400 ms |
+| memory | 10 | 100.0% | 100.0% | 1632 ms |
+| mixed | 10 | 100.0% | 100.0% | 1576 ms |
+| reasoning | 10 | 10.0% | 100.0% | 1168 ms |
+| recovery | 10 | 100.0% | 100.0% | 1099 ms |
 
 ## Reproducing
 

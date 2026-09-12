@@ -147,6 +147,12 @@ Runtime、工具契约、恢复链路与评测管线，不冒充真实模型的�
 契约，不表示模型能力。模型评测状态和限制见
 [evaluation-status.md](docs/evaluation-status.md)。
 
+OpenCodeGo `deepseek-v4.1-flash` 的 100 条严格 Contract Suite 结果为：Pass@1
+91.0%、工具正确率 100%、P50 16.23s、P95 36.93s、恢复成功率 92.9%。主要失败类型是
+Recovery 任务在 32k Token 预算内耗尽。Provider 未公开对应价格，因此成本明确标记为
+`N/A`，不按零成本计算。完整报告见
+[opencodego-deepseek-v4.1-flash-contract.md](docs/benchmarks/opencodego-deepseek-v4.1-flash-contract.md)。
+
 ## API 示例
 
 创建并执行任务：
