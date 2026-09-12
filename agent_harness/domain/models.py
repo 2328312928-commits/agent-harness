@@ -77,6 +77,7 @@ class Message(BaseModel):
 
     role: MessageRole
     content: str = ""
+    reasoning_content: str | None = None
     name: str | None = None
     tool_call_id: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
@@ -123,6 +124,7 @@ class Usage(BaseModel):
 
 class ProviderResponse(BaseModel):
     content: str = ""
+    reasoning_content: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
     usage: Usage = Field(default_factory=Usage)
     finish_reason: str | None = None

@@ -114,6 +114,7 @@ class AgentRunner:
                     Message(
                         role=MessageRole.ASSISTANT,
                         content=response.content,
+                        reasoning_content=response.reasoning_content,
                         tool_calls=provider_tool_calls,
                     )
                 )
@@ -179,7 +180,13 @@ class AgentRunner:
             response_format={"type": "json_object"},
         )
         state.plan = self._parse_plan(response.content, state.goal)
-        state.messages.append(Message(role=MessageRole.ASSISTANT, content=response.content))
+        state.messages.append(
+            Message(
+                role=MessageRole.ASSISTANT,
+                content=response.content,
+                reasoning_content=response.reasoning_content,
+            )
+        )
         await self._checkpoint(state, "after_plan")
 
     async def _act(self, state: AgentState, cancel_event: asyncio.Event) -> ProviderResponse:
@@ -378,6 +385,7 @@ class AgentRunner:
             Message(
                 role=MessageRole.ASSISTANT,
                 content=response.content,
+                reasoning_content=response.reasoning_content,
                 name="replan",
             )
         )
@@ -424,6 +432,7 @@ class AgentRunner:
                     model=model_name,
                     max_tokens=max_tokens,
                     response_format=response_format,
+                    metadata={"session_id": state.task_id},
                 )
             )
         )

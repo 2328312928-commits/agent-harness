@@ -99,6 +99,18 @@ DEEPSEEK_API_KEY=your-key
 DEEPSEEK_MODEL=deepseek-chat
 ```
 
+接入 OpenCodeGo 时设置：
+
+```dotenv
+DEFAULT_PROVIDER=openai-compatible
+OPENAI_COMPATIBLE_API_KEY=your-key
+OPENAI_COMPATIBLE_BASE_URL=https://opencode.ai/zen/go/v1
+OPENAI_COMPATIBLE_MODEL=deepseek-v4.1-flash
+```
+
+OpenCodeGo 的 session 与 reasoning 兼容说明见
+[opencodego.md](docs/opencodego.md)。
+
 `render.yaml` 提供了 PostgreSQL、API 和静态控制台的在线 Demo Blueprint，部署说明见
 [deployment.md](docs/deployment.md)。
 

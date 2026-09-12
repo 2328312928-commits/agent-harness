@@ -70,13 +70,19 @@ class OpenAICompatibleProvider(LLMProvider):
             payload["response_format"] = request.response_format
 
         started = time.perf_counter()
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "agent-harness/0.2.1",
+        }
+        if "opencode.ai" in self.base_url:
+            headers["x-opencode-session"] = str(
+                request.metadata.get("session_id") or "agent-harness"
+            )
         try:
             response = await self.client.post(
                 f"{self.base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=headers,
                 json=payload,
             )
         except httpx.TimeoutException as exc:
@@ -120,6 +126,7 @@ class OpenAICompatibleProvider(LLMProvider):
 
         return ProviderResponse(
             content=message.get("content") or "",
+            reasoning_content=message.get("reasoning_content"),
             tool_calls=tool_calls,
             usage=usage,
             finish_reason=choice.get("finish_reason"),
@@ -131,6 +138,8 @@ class OpenAICompatibleProvider(LLMProvider):
     @staticmethod
     def _serialize_message(message: Message) -> dict[str, Any]:
         item: dict[str, Any] = {"role": message.role.value, "content": message.content}
+        if message.reasoning_content:
+            item["reasoning_content"] = message.reasoning_content
         if message.name:
             item["name"] = message.name
         if message.tool_call_id:
