@@ -186,7 +186,7 @@ def handle(payload: dict[str, Any]) -> dict[str, Any] | None:
             {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {"listChanged": False}},
-                "serverInfo": {"name": "agent-harness-demo", "version": "0.1.0"},
+                "serverInfo": {"name": "agent-harness-demo", "version": "0.2.1"},
             },
         )
     if method.startswith("notifications/"):

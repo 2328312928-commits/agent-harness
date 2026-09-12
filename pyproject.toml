@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-harness"
-version = "0.1.0"
+version = "0.2.1"
 description = "A checkpointable, observable, and evaluable Agent runtime with MCP and Docker sandbox support."
 readme = "README.md"
 requires-python = ">=3.11"

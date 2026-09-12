@@ -176,7 +176,7 @@ class MCPClient:
         self.transport = transport
         self.client_info = client_info or {
             "name": "agent-harness",
-            "version": "0.1.0",
+            "version": "0.2.1",
         }
         self.server_info: dict[str, Any] = {}
         self._initialized = False

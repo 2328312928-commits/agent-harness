@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Agent Harness API",
-    version="0.1.0",
+    version="0.2.1",
     description="Checkpointable, observable, and evaluable agent runtime.",
     lifespan=lifespan,
 )
