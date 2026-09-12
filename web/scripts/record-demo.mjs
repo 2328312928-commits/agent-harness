@@ -118,6 +118,28 @@ async function wait(seconds) {
   await page.waitForTimeout(seconds * 1000);
 }
 
+async function waitForCurrentTaskTerminal() {
+  const label = page.locator(".task-header .task-title > span");
+  await label.waitFor({ timeout: 30_000 });
+  const text = (await label.textContent()) ?? "";
+  const taskId = text.replace("RUN /", "").trim();
+  if (!taskId.startsWith("task_")) {
+    throw new Error(`Could not resolve current task id from: ${text}`);
+  }
+  await page.waitForFunction(
+    (expectedTaskId) => {
+      const heading = document.querySelector(".task-header .task-title > span");
+      if (!heading || !heading.textContent?.includes(expectedTaskId)) return false;
+      const badge = document.querySelector(".task-header .status-badge");
+      const status = badge?.textContent?.trim();
+      return status === "Completed" || status === "Partial" || status === "Failed";
+    },
+    taskId,
+    { timeout: 60_000 },
+  );
+  return taskId;
+}
+
 try {
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 120_000 });
   await page.getByRole("heading", { name: "New run" }).waitFor({ timeout: 120_000 });
@@ -131,10 +153,16 @@ try {
   await wait(7);
 
   await caption("ACT → OBSERVE", "模型选择工具，观察结果后继续执行");
-  await page.getByText("Task completed").first().waitFor({ timeout: 45_000 });
+  const taskId = await waitForCurrentTaskTerminal();
+  const finalStatus = await page
+    .locator(".task-header .status-badge")
+    .textContent();
   await wait(9);
 
-  await caption("CHECKPOINT", "每个阶段写入持久化事件，可恢复、可追踪");
+  await caption(
+    `TASK ${taskId.slice(-6)} / ${finalStatus}`,
+    "每个阶段写入持久化事件，可恢复、可追踪",
+  );
   await page.locator(".timeline").scrollIntoViewIfNeeded();
   await wait(7);
 

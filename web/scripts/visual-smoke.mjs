@@ -31,6 +31,24 @@ try {
   await page.getByText("Trace", { exact: true }).first().waitFor();
   await page.getByText("Plan", { exact: true }).first().waitFor();
   await page.getByText("Checkpoint saved").first().waitFor({ timeout: 15000 });
+  const taskLabel = page.locator(".task-header .task-title > span");
+  await taskLabel.waitFor();
+  const taskText = (await taskLabel.textContent()) ?? "";
+  const taskId = taskText.replace("RUN /", "").trim();
+  await page.waitForFunction(
+    (expectedTaskId) => {
+      const heading = document.querySelector(".task-header .task-title > span");
+      if (!heading || !heading.textContent?.includes(expectedTaskId)) return false;
+      const badge = document.querySelector(".task-header .status-badge");
+      const status = badge?.textContent?.trim();
+      return status === "Completed" || status === "Partial" || status === "Failed";
+    },
+    taskId,
+    { timeout: 30000 },
+  );
+  const taskStatus = await page
+    .locator(".task-header .status-badge")
+    .textContent();
   await page.screenshot({
     path: resolve(outputDir, "console-trace.png"),
     fullPage: true,
@@ -61,6 +79,8 @@ try {
     desktopOverflow,
     mobileOverflow,
     toolCount,
+    taskId,
+    taskStatus,
     screenshots: [
       "console-desktop.png",
       "console-trace.png",
