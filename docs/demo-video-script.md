@@ -36,8 +36,8 @@ files or explaining the architecture line by line.
 
 ## 1:14-1:24 Result
 
-- Show the DeepSeek 100-task report.
-- Caption: `100 条真实任务：成功率 100%，P95 15.43s`.
+- Show `docs/evaluation-status.md` and the current strict contract report.
+- Caption: `严格评测、失败分析和模型评测边界`.
 
 ## Recording Rules
 
@@ -46,4 +46,3 @@ files or explaining the architecture line by line.
 - Do not show cold starts, browser navigation bars, or long Markdown scrolling.
 - Prefer 1280x720 at 25fps.
 - Target duration: 80-120 seconds.
-

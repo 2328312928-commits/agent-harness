@@ -128,6 +128,9 @@ class AgentRunner:
 
                 await self._reflect(state, "No tool call was required.", cancel_event)
                 state.final_answer = response.content.strip() or "Task completed."
+                if state.metadata.get("unresolved_tool_failures"):
+                    state.metadata["partial_reason"] = "unresolved_tool_failure"
+                    return await self._partial(state)
                 return await self._complete(state)
 
             raise RuntimeError(f"Maximum agent steps exceeded ({state.max_steps})")
@@ -211,6 +214,7 @@ class AgentRunner:
         for call in tool_calls:
             result = await self._execute_tool(state, call, cancel_event)
             state.observations.append(result)
+            self._record_tool_outcome(state, result)
             await self._checkpoint(state, "after_observation")
             await self._reflect(
                 state,
@@ -228,6 +232,7 @@ class AgentRunner:
             state.metadata["recovery_count"] = recovery_count
             if recovery_count > self.max_recoveries:
                 state.metadata["recovery_exhausted"] = True
+                state.metadata["partial_reason"] = "recovery_limit"
                 state.final_answer = (
                     state.reflections[-1]
                     if state.reflections
@@ -235,6 +240,16 @@ class AgentRunner:
                 )
                 return
             await self._replan(state, cancel_event)
+
+    @staticmethod
+    def _record_tool_outcome(state: AgentState, result: Any) -> None:
+        unresolved = list(state.metadata.get("unresolved_tool_failures", []))
+        if result.ok:
+            if result.tool_name in unresolved:
+                unresolved.remove(result.tool_name)
+        else:
+            unresolved.append(result.tool_name)
+        state.metadata["unresolved_tool_failures"] = unresolved
 
     async def _execute_tool(
         self,
@@ -515,6 +530,13 @@ class AgentRunner:
 
     async def _partial(self, state: AgentState) -> AgentState:
         await self._enter_phase(state, RunPhase.FINALIZE)
+        unresolved = state.metadata.get("unresolved_tool_failures", [])
+        if unresolved and not (state.final_answer or "").startswith("任务未完全完成"):
+            failures = ", ".join(str(item) for item in unresolved)
+            state.final_answer = (
+                f"任务未完全完成。未解决的工具失败：{failures}。\n\n"
+                f"{state.final_answer or ''}"
+            ).strip()
         state.status = RuntimeStatus.PARTIAL
         state.completed_at = datetime.now(UTC)
         state.updated_at = state.completed_at
@@ -528,7 +550,14 @@ class AgentRunner:
             payload={
                 "final_answer": state.final_answer,
                 "recovery_count": state.metadata.get("recovery_count", 0),
-                "recovery_exhausted": True,
+                "recovery_exhausted": bool(
+                    state.metadata.get("recovery_exhausted", False)
+                ),
+                "partial_reason": state.metadata.get("partial_reason"),
+                "unresolved_tool_failures": state.metadata.get(
+                    "unresolved_tool_failures",
+                    [],
+                ),
             },
         )
         await self.tracer.bus.close(state.task_id)

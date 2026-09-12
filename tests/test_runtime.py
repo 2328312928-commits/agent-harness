@@ -39,9 +39,12 @@ async def test_permission_failure_recovers(container: AppContainer) -> None:
         metadata={"tool_permissions": []},
     )
     result = await wait_for_terminal(container, state.task_id)
-    assert result["status"] == "completed"
+    assert result["status"] == "partial"
     assert result["metadata"]["recovery_count"] == 1
     assert result["observations"][0]["error_type"] == "tool_permission_denied"
+    assert result["metadata"]["unresolved_tool_failures"] == [
+        "filesystem.read_file"
+    ]
 
 
 async def test_recovery_limit_returns_final_reflection(container: AppContainer) -> None:
@@ -55,6 +58,23 @@ async def test_recovery_limit_returns_final_reflection(container: AppContainer) 
     assert result["status"] == "partial"
     assert result["metadata"]["recovery_exhausted"] is True
     assert result["final_answer"]
+
+
+async def test_unresolved_tool_failure_cannot_complete(container: AppContainer) -> None:
+    state = await container.runtime.start(
+        "请读取 examples/demo.txt，然后计算 12 + 7",
+        provider="fake",
+        metadata={"tool_permissions": ["read"]},
+    )
+    result = await wait_for_terminal(container, state.task_id)
+    assert result["status"] == "partial"
+    assert result["metadata"]["partial_reason"] == "unresolved_tool_failure"
+    assert result["metadata"]["unresolved_tool_failures"] == ["sandbox.run_python"]
+    assert result["final_answer"].startswith("任务未完全完成")
+    assert any(
+        item["tool_name"] == "sandbox.run_python" and not item["ok"]
+        for item in result["observations"]
+    )
 
 
 async def test_resume_from_persisted_interrupted_state(container: AppContainer) -> None:

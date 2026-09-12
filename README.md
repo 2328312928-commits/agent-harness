@@ -22,7 +22,7 @@ Render 免费实例在空闲后会休眠，首次访问可能需要几十秒唤�
 [观看 1 分 24 秒真实操作 Demo](artifacts/video/agent-harness-demo-short.webm)
 
 视频不包含语音，仅使用简短中文字幕，直接演示任务创建、Plan/Act/Observe/Reflect、
-实时 Trace、Checkpoint、MCP 工具、评测页面和 DeepSeek Benchmark 结果。
+实时 Trace、Checkpoint、MCP 工具、评测页面和当前 Contract Benchmark 状态。
 
 ## 核心能力
 

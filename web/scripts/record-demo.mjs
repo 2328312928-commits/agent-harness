@@ -152,10 +152,13 @@ try {
   await wait(11);
 
   await page.goto(
-    "https://github.com/2328312928-commits/agent-harness/blob/main/docs/benchmarks/deepseek-chat-main.md",
+    "https://github.com/2328312928-commits/agent-harness/blob/main/docs/evaluation-status.md",
     { waitUntil: "domcontentloaded", timeout: 120_000 },
   );
-  await caption("DEEPSEEK", "100 条真实任务：成功率 100%，P95 15.43s");
+  await caption(
+    "EVALUATION",
+    "严格工具成功校验、答案校验、恢复语义和模型评测边界",
+  );
   await wait(10);
 
   await caption("RESULT", "可运行、可恢复、可观测、可评测");
@@ -171,4 +174,3 @@ try {
 }
 
 console.log(resolve(outputDir, "agent-harness-demo-short.webm"));
-
