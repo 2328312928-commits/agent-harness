@@ -130,14 +130,10 @@ python scripts/run_benchmark.py
 Runtime、工具契约、恢复链路与评测管线，不冒充真实模型的泛化能力。配置 DeepSeek
 或 OpenAI-compatible Provider 后，可用同一数据集生成模型对比报告。
 
-当前 110 条离线回归的真实结果为：任务成功率 100%、工具准确率 100%、P50 484ms、
-P95 2.18s、恢复成功率 100%。该结果用于证明 Runtime 本身可工作，不表示模型能力。
-真实 DeepSeek 评测流程见 [model-benchmark.md](docs/model-benchmark.md)。
-
-DeepSeek `deepseek-chat` 的 100 条真实模型任务结果为：任务成功率 100%、工具准确率
-100%、P50 7.32s、P95 15.43s、总成本约 `$0.4563`、恢复成功率 100%。完整报告见
-[deepseek-chat-main.md](docs/benchmarks/deepseek-chat-main.md)。Browser 网络类别作为
-独立集成测试保留，不计入这 100 条稳定基线。
+严格 Grader 下的确定性 Runtime Contract Suite 当前结果为：任务通过率 73.6%、
+工具正确率 90.9%、P50 553ms、P95 2.08s、恢复成功率 100%。这些数字用于验证运行时
+契约，不表示模型能力。模型评测状态和限制见
+[evaluation-status.md](docs/evaluation-status.md)。
 
 ## API 示例
 

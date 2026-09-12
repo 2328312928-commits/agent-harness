@@ -114,8 +114,12 @@ def render_report(summary) -> str:
         interpretation = (
             f"This report was generated with provider `{summary.provider}` and model "
             f"`{summary.model}`. Model version, endpoint, prompt strategy, and dataset "
-            "revision should be kept fixed when comparing results."
+            "revision should be kept fixed when comparing results. This is a deterministic "
+            "Runtime contract benchmark, not a broad model-quality or public leaderboard."
         )
+    success_label = (
+        "Task success rate" if summary.provider == "fake" else "Task Pass@1"
+    )
     return f"""# Benchmark Report
 
 > {interpretation}
@@ -136,7 +140,7 @@ def render_report(summary) -> str:
 
 | Metric | Value |
 | --- | ---: |
-| Task success rate | {summary.task_success_rate:.1%} |
+| {success_label} | {summary.task_success_rate:.1%} |
 | Tool accuracy | {summary.tool_accuracy:.1%} |
 | P50 latency | {summary.p50_latency_ms:.1f} ms |
 | P95 latency | {summary.p95_latency_ms:.1f} ms |
@@ -159,7 +163,7 @@ python scripts/run_benchmark.py \\
   --provider {summary.provider} \\
   --model {summary.model} \\
   --categories {category_arg} \\
-  --limit {len(results)}
+  --limit {summary.total_tasks}
 ```
 
 The dataset contains 110 tasks across reasoning, filesystem, coding, database,

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from agent_harness.domain.models import AgentState, EvalTask, TokenBudgetState
 from agent_harness.evals.graders import grade_task
 
@@ -23,5 +25,5 @@ def test_grader_requires_tool_and_answer() -> None:
     )
     success, score, tool_accuracy = grade_task(task, state)
     assert not success
-    assert score == 0.4
+    assert score == pytest.approx(0.5)
     assert tool_accuracy == 0

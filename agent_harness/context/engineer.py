@@ -122,8 +122,11 @@ class ContextEngineer:
             message for message in messages[:4] if message.role == MessageRole.SYSTEM
         ]
         head = messages[:2]
-        tail = messages[-4:]
-        middle = messages[len(head) : -len(tail)]
+        tail_start = max(len(head), len(messages) - 4)
+        while tail_start > len(head) and messages[tail_start].role == MessageRole.TOOL:
+            tail_start -= 1
+        tail = messages[tail_start:]
+        middle = messages[len(head) : tail_start]
         summary = self._summarize(middle)
         compacted = [
             *head,

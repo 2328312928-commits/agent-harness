@@ -12,8 +12,11 @@ def task(
     *,
     required_tools: list[str] | None = None,
     answer_contains: list[str] | None = None,
+    answer_contains_any: list[str] | None = None,
     min_observations: int = 0,
+    min_successful_observations: int = 0,
     min_recoveries: int = 0,
+    status: str | list[str] = "completed",
     fixture: dict | None = None,
     tags: list[str] | None = None,
 ) -> dict:
@@ -23,10 +26,12 @@ def task(
         "difficulty": difficulty,
         "goal": goal,
         "expected": {
-            "status": "completed",
+            "status": status,
             "required_tools": required_tools or [],
             "answer_contains": answer_contains or [],
+            "answer_contains_any": answer_contains_any or [],
             "min_observations": min_observations,
+            "min_successful_observations": min_successful_observations,
             "min_recoveries": min_recoveries,
         },
         "max_steps": 12,
@@ -51,24 +56,25 @@ def build_tasks() -> list[dict]:
     ]
 
     reasoning_topics = [
-        "幂等操作",
-        "指数退避",
-        "最终一致性",
-        "可观测性的三大支柱",
-        "熔断器",
-        "检查点",
-        "租约机制",
-        "背压",
-        "蓝绿部署与灰度发布",
-        "幂等键",
+        ("幂等操作", ["多次执行", "结果一致", "重复执行"]),
+        ("指数退避", ["重试", "指数", "等待时间"]),
+        ("最终一致性", ["最终", "一致", "延迟"]),
+        ("可观测性的三大支柱", ["日志", "指标", "追踪"]),
+        ("熔断器", ["失败", "快速", "恢复"]),
+        ("检查点", ["状态", "恢复", "保存"]),
+        ("租约机制", ["超时", "续约", "锁"]),
+        ("背压", ["消费", "生产", "限速"]),
+        ("蓝绿部署与灰度发布", ["流量", "版本", "切换"]),
+        ("幂等键", ["唯一", "重复", "请求"]),
     ]
-    for index, topic in enumerate(reasoning_topics, start=1):
+    for index, (topic, expected_terms) in enumerate(reasoning_topics, start=1):
         tasks.append(
             task(
                 f"reasoning-{index:03d}",
                 "reasoning",
                 difficulties[index - 1],
                 f"请解释{topic}，并给出一个 Agent Runtime 中的适用场景。不要调用外部工具。",
+                answer_contains_any=expected_terms,
                 tags=["no-tool", "concept"],
             )
         )
@@ -83,6 +89,7 @@ def build_tasks() -> list[dict]:
                 required_tools=["filesystem.read_file"],
                 answer_contains=["Agent Harness demo workspace"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["offline", "filesystem", "read"],
             )
         )
@@ -96,6 +103,7 @@ def build_tasks() -> list[dict]:
                 f"请列出目录 . 下的文件列表，用于第 {index} 次工作区检查。",
                 required_tools=["filesystem.list"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["offline", "filesystem", "list"],
             )
         )
@@ -129,6 +137,7 @@ def build_tasks() -> list[dict]:
                 required_tools=["sandbox.run_python"],
                 answer_contains=[answer_text],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["offline", "sandbox", "calculation"],
             )
         )
@@ -142,6 +151,7 @@ def build_tasks() -> list[dict]:
                 f"请通过 SQL 数据库健康检查确认连接可用，这是第 {index} 个数据库任务。",
                 required_tools=["database.query"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["offline", "database", "readonly"],
             )
         )
@@ -167,6 +177,7 @@ def build_tasks() -> list[dict]:
                 f"请记住：{memory}。这是长期记忆写入测试 {index}。",
                 required_tools=["memory.remember"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["offline", "memory"],
             )
         )
@@ -180,6 +191,7 @@ def build_tasks() -> list[dict]:
                 f"请读取 examples/demo.txt；权限恢复测试编号 {index}。",
                 required_tools=[],
                 min_recoveries=1,
+                status=["partial", "completed"],
                 fixture={"tool_permissions": []},
                 tags=["offline", "recovery", "permission"],
             )
@@ -192,6 +204,7 @@ def build_tasks() -> list[dict]:
                 "context",
                 "hard",
                 f"总结大量历史约束并给出一句结论，上下文压缩回归 {index}。不要调用外部工具。",
+                answer_contains_any=["上下文", "压缩", "历史"],
                 fixture={"long_context": True},
                 tags=["offline", "context", "compaction"],
             )
@@ -212,6 +225,7 @@ def build_tasks() -> list[dict]:
                 f"请浏览 {url} 并抓取页面标题，任务编号 {index}。",
                 required_tools=["browser.fetch"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["network", "browser", "public-web"],
             )
         )
@@ -237,6 +251,7 @@ def build_tasks() -> list[dict]:
                 f"请使用 GitHub 搜索仓库：{query}，返回前几个结果的名称。",
                 required_tools=["github.search_repositories"],
                 min_observations=1,
+                min_successful_observations=1,
                 tags=["network", "github", "search"],
             )
         )
@@ -256,6 +271,7 @@ def build_tasks() -> list[dict]:
                 required_tools=["filesystem.read_file", "sandbox.run_python"],
                 answer_contains=[str(answer)],
                 min_observations=2,
+                min_successful_observations=2,
                 tags=["offline", "mixed", "filesystem", "sandbox"],
             )
         )

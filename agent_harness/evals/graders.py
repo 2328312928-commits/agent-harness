@@ -8,35 +8,66 @@ from agent_harness.domain.models import AgentState, EvalTask
 
 def grade_task(task: EvalTask, state: AgentState) -> tuple[bool, float, float]:
     required_tools = {str(item) for item in task.expected.get("required_tools", [])}
-    used_tools = {result.tool_name for result in state.observations}
+    successful_tools = {
+        result.tool_name for result in state.observations if result.ok
+    }
     tool_accuracy = (
-        len(required_tools & used_tools) / len(required_tools) if required_tools else 1.0
+        len(required_tools & successful_tools) / len(required_tools)
+        if required_tools
+        else 1.0
     )
 
-    status_ok = state.status.value == task.expected.get("status", "completed")
+    expected_status = task.expected.get("status", "completed")
+    expected_statuses = (
+        {str(item) for item in expected_status}
+        if isinstance(expected_status, list)
+        else {str(expected_status)}
+    )
+    status_ok = state.status.value in expected_statuses
     minimum_observations = int(task.expected.get("min_observations", 0))
     observation_ok = len(state.observations) >= minimum_observations
+    minimum_successful_observations = int(
+        task.expected.get("min_successful_observations", 0)
+    )
+    successful_observation_ok = (
+        sum(1 for result in state.observations if result.ok)
+        >= minimum_successful_observations
+    )
     answer_ok = _answer_matches(
         state.final_answer or "",
         task.expected.get("answer_contains", []),
+        task.expected.get("answer_contains_any", []),
     )
     recovery_expected = int(task.expected.get("min_recoveries", 0))
     recovery_ok = int(state.metadata.get("recovery_count", 0)) >= recovery_expected
-    tools_ok = required_tools.issubset(used_tools)
+    tools_ok = required_tools.issubset(successful_tools)
 
-    checks = [status_ok, observation_ok, answer_ok, recovery_ok, tools_ok]
+    checks = [
+        status_ok,
+        observation_ok,
+        successful_observation_ok,
+        answer_ok,
+        recovery_ok,
+        tools_ok,
+    ]
     score = sum(1 for check in checks if check) / len(checks)
     success = all(checks)
     return success, score, tool_accuracy
 
 
-def _answer_matches(answer: str, expected_parts: Any) -> bool:
-    if not expected_parts:
-        return True
-    if isinstance(expected_parts, str):
-        expected_parts = [expected_parts]
+def _answer_matches(answer: str, expected_parts: Any, expected_any: Any) -> bool:
     normalized = answer.casefold()
-    return all(str(part).casefold() in normalized for part in expected_parts)
+    if expected_parts:
+        if isinstance(expected_parts, str):
+            expected_parts = [expected_parts]
+        if not all(str(part).casefold() in normalized for part in expected_parts):
+            return False
+    if expected_any:
+        if isinstance(expected_any, str):
+            expected_any = [expected_any]
+        if not any(str(part).casefold() in normalized for part in expected_any):
+            return False
+    return True
 
 
 def compact_state(state: AgentState) -> dict[str, Any]:
