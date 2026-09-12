@@ -71,6 +71,7 @@ async def test_unresolved_tool_failure_cannot_complete(container: AppContainer) 
     assert result["metadata"]["partial_reason"] == "unresolved_tool_failure"
     assert result["metadata"]["unresolved_tool_failures"] == ["sandbox.run_python"]
     assert result["final_answer"].startswith("任务未完全完成")
+    assert "任务已完成" not in result["final_answer"]
     assert any(
         item["tool_name"] == "sandbox.run_python" and not item["ok"]
         for item in result["observations"]

@@ -533,10 +533,18 @@ class AgentRunner:
         unresolved = state.metadata.get("unresolved_tool_failures", [])
         if unresolved and not (state.final_answer or "").startswith("任务未完全完成"):
             failures = ", ".join(str(item) for item in unresolved)
-            state.final_answer = (
-                f"任务未完全完成。未解决的工具失败：{failures}。\n\n"
-                f"{state.final_answer or ''}"
-            ).strip()
+            model_answer = state.final_answer or ""
+            claims_success = any(
+                marker in model_answer.casefold()
+                for marker in ("任务已完成", "task completed", "successfully completed")
+            )
+            acknowledges_failure = (not claims_success) and any(
+                marker in model_answer.casefold()
+                for marker in ("未完成", "失败", "无法", "不可", "error", "permission")
+            )
+            state.final_answer = f"任务未完全完成。未解决的工具失败：{failures}。"
+            if acknowledges_failure:
+                state.final_answer += f"\n\n{model_answer}"
         state.status = RuntimeStatus.PARTIAL
         state.completed_at = datetime.now(UTC)
         state.updated_at = state.completed_at
